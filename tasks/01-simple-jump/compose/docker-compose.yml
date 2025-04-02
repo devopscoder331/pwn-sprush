@@ -1,0 +1,15 @@
+services:
+  simple-jump:
+    platform: linux/amd64
+    build:
+      context: app
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      FLAG: "flag{w3lc0m3_70_pwn}"
+    ports:
+      - 9000:9000
+    cpus: '0.1'
+    mem_limit: 128M
+    memswap_limit: 128M
+    stop_grace_period: 3s
