@@ -6,7 +6,7 @@ WORKDIR /app/
 
 RUN chown nobody:nogroup ./
 
-COPY src/ ./
+COPY main entrypoint.sh ./
 
 RUN chmod +x main ./entrypoint.sh
 
