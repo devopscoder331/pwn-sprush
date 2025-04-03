@@ -1,6 +1,11 @@
 #include <stdio.h>
 #include <unistd.h>
 
+void ROP() {
+  asm("pop %rdi\n\t"
+      "ret");
+}
+
 void func() {
   char buffer[32];
   read(0, buffer, 256);
