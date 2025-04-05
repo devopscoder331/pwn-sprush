@@ -1,0 +1,16 @@
+services:
+  app:
+    platform: linux/amd64
+    container_name: static-rop
+    build:
+      context: app
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      FLAG: "flag{hello_static_ROP}"
+    ports:
+      - 9000:9000
+    cpus: '0.1'
+    mem_limit: 128M
+    memswap_limit: 128M
+    stop_grace_period: 3s
