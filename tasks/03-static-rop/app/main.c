@@ -1,4 +1,8 @@
-// Build with: gcc main.c -o main -no-pie
+/**
+ * Buffer Overflow (64-bit). Case 3: Static ROP
+ * Compile: gcc main.c -o main -no-pie
+ */
+
 
 #include <stdio.h>
 #include <unistd.h>
