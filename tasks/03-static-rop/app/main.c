@@ -1,3 +1,5 @@
+// Build with: gcc main.c -o main -no-pie
+
 #include <stdio.h>
 #include <unistd.h>
 
