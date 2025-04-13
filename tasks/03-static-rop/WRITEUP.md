@@ -13,7 +13,7 @@
 
 ![](img/img1.png)
 
-```
+```bash
 $ checksec --file=main
 [*] '/home/luksa/git/BugHunters_Lab/pwn-sprush/tasks/03-static-rop/app/main'
     Arch:       amd64-64-little
@@ -35,7 +35,7 @@ $ checksec --file=main
 ![](img/img2.png)
 ![](img/img3.png)
 
-```
+```bash
 $ ROPgadget --binary ./main
 
 Gadgets information
@@ -58,7 +58,7 @@ Unique gadgets found: 64
 
 ![](img/img4.png)
 
-```
+```c
 └─$ gdb-pwndbg main
 Reading symbols from main...
 (No debugging symbols found in main)
@@ -94,7 +94,7 @@ pwndbg> x/32i ROP
 
 ![](img/img5.png)
 
-```
+```c
 pwndbg> info functions 
 All defined functions:
 
